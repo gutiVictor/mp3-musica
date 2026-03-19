@@ -51,9 +51,11 @@ if not os.path.exists('descargas'):
 def descargar_cancion(nombre_cancion):
     YTDL_OPTS = {
         'format': 'bestaudio/best',
-        'extract_audio': True,
-        'audio_format': 'mp3',
-        'audio_quality': '192K',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
         'outtmpl': 'descargas/%(title)s.%(ext)s',
         'noplaylist': True,
         'quiet': True,
@@ -71,12 +73,16 @@ def descargar_cancion(nombre_cancion):
                 entry = info
                 
             titulo = entry.get('title', nombre_cancion)
-            base_filename = ydl.prepare_filename(entry)
             
-            # Como forceamos mp3, la salida final de ffmpeg será .mp3
-            final_filename = os.path.splitext(base_filename)[0] + '.mp3'
+            # Obtener la ruta final del archivo procesado si yt-dlp lo reporta
+            ruta_final = None
+            if 'requested_downloads' in entry and len(entry['requested_downloads']) > 0:
+                ruta_final = entry['requested_downloads'][0]['filepath']
+            else:
+                target = ydl.prepare_filename(entry)
+                ruta_final = os.path.splitext(target)[0] + '.mp3'
             
-            return titulo, final_filename, None
+            return titulo, ruta_final, None
     except Exception as e:
         return None, None, str(e)
 
@@ -94,23 +100,28 @@ with tab1:
     if st.button("Buscar y Descargar Canción"):
         if cancion_individual.strip():
             with st.spinner(f"Buscando el mejor audio para '{cancion_individual}'..."):
-                titulo, ruta_mp3, error = descargar_cancion(cancion_individual)
+                titulo, ruta_mp3, error = descargar_cancion(cancion_individual.strip())
                 
             if error:
                 st.error(f"Ocurrió un error: {error}")
             elif ruta_mp3 and os.path.exists(ruta_mp3):
                 st.success(f"¡Audio procesado con éxito: {titulo}!")
-                with open(ruta_mp3, "rb") as file:
-                    st.download_button(
-                        label="💾 Guardar archivo MP3",
-                        data=file,
-                        file_name=os.path.basename(ruta_mp3),
-                        mime="audio/mpeg"
-                    )
+                # Guardar en el estado para que el botón no desaparezca
+                st.session_state['archivo_listo'] = ruta_mp3
             else:
                 st.error("No se pudo extraer el archivo de audio. Intenta con otra búsqueda.")
         else:
             st.warning("Por favor, ingresa un nombre válido para buscar.")
+
+    # Mostrar botón de descarga si hay un archivo listo en sesión
+    if 'archivo_listo' in st.session_state and os.path.exists(st.session_state['archivo_listo']):
+        with open(st.session_state['archivo_listo'], "rb") as file:
+            st.download_button(
+                label="💾 Guardar archivo MP3 ahora",
+                data=file,
+                file_name=os.path.basename(st.session_state['archivo_listo']),
+                mime="audio/mpeg"
+            )
 
 # --- TAB 2: LOTE ---
 with tab2:
