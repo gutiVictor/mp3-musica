@@ -20,13 +20,18 @@ if errorlevel 1 (
 echo  [OK] Python detectado.
 echo.
 echo [2/3] Instalando librerias necesarias...
-pip install -r "%~dp0requirements.txt" --quiet --disable-pip-version-check
+echo  (La primera vez puede tardar varios minutos, por favor espera)
+echo  Podras ver el progreso de cada descarga a continuacion:
+echo.
+pip install -r "%~dp0requirements.txt" --disable-pip-version-check
 if errorlevel 1 (
+    echo.
     echo  ERROR: No se pudieron instalar las librerias.
-    echo  Verifica tu conexion a internet.
+    echo  Verifica tu conexion a internet e intenta de nuevo.
     pause
     exit /b 1
 )
+echo.
 echo  [OK] Librerias listas.
 echo.
 echo [3/3] Verificando FFmpeg...
@@ -62,3 +67,10 @@ echo  Para CERRAR la app cierra esta ventana.
 echo ============================================================
 echo.
 streamlit run app.py
+if errorlevel 1 (
+    echo.
+    echo  ERROR: La aplicacion no pudo iniciarse.
+    echo  Revisa el mensaje de error que aparece arriba.
+)
+echo.
+pause
