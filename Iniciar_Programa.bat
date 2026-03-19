@@ -1,0 +1,3 @@
+@echo off
+echo Iniciando el Descargador de Musica MP3...
+streamlit run app.py
